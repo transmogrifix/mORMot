@@ -100,14 +100,17 @@ type
       Identifier: TCountryIdentifier;
       Iso: TCountryIsoNumeric;
     end;
-    function GetIdentifier: TCountryIdentifier;
+    function GetIdentifier: TCountryIdentifier; overload;
     function GetIsoAlpha2: TCountryIsoAlpha2;
     function GetIsoAlpha3: TCountryIsoAlpha3;
     procedure SetIdentifier(const Value: TCountryIdentifier);
     procedure SetIsoAlpha2(const Value: TCountryIsoAlpha2);
     procedure SetIsoAlpha3(const Value: TCountryIsoAlpha3);
-    function GetEnglish: RawUTF8;
+    function GetEnglish: RawUTF8; overload;
   public
+    class function GetIdentifier(const isoNumeric: TCountryIsoNumeric): TCountryIdentifier; overload;
+    class function GetAlpha2(const isoNumeric: TCountryIsoNumeric): TCountryIsoAlpha2;
+    class function GetEnglish(const isoNumeric: TCountryIsoNumeric): RawUTF8; overload;
     /// built-in simple unit tests
     class procedure RegressionTests(test: TSynTestCase);
     /// returns TRUE if both Country instances have the same content
@@ -412,6 +415,16 @@ begin
   end;
 end;
 
+class function TCountry.GetAlpha2(const isoNumeric: TCountryIsoNumeric): TCountryIsoAlpha2;
+begin
+  SetString(result,PAnsiChar(@COUNTRY_ISO2[GetIdentifier(isoNumeric)]),2);
+end;
+
+class function TCountry.GetEnglish(const isoNumeric: TCountryIsoNumeric): RawUTF8;
+begin
+  result := COUNTRY_NAME_EN[GetIdentifier(isoNumeric)];
+end;
+
 function TCountry.GetEnglish: RawUTF8;
 begin
   result := COUNTRY_NAME_EN[GetIdentifier];
@@ -436,6 +449,21 @@ begin
   end;
   fCache.Iso := Iso;
   fCache.Identifier := result;
+end;
+
+class function TCountry.GetIdentifier(const isoNumeric: TCountryIsoNumeric): TCountryIdentifier;
+var ndx: integer;
+begin
+  if isoNumeric=0 then begin
+    result := ccUndefined;
+    exit;
+  end else
+  with COUNTRY_ISONUM_ORDERED do begin
+    ndx := FastFindIntegerSorted(@Values,length(Values)-1,isoNumeric);
+    if ndx<0 then
+      result := ccUndefined else
+      byte(result) := Indexes[TCountryIdentifier(ndx)];
+  end;
 end;
 
 function TCountry.GetIsoAlpha2: TCountryIsoAlpha2;
